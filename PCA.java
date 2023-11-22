@@ -67,6 +67,18 @@ public class PCA {
          * TODO: Run PCA in the constructor. I think we should make one function for SVD PCA and one function for Eigen covariance matrix PCA 
          * then just call those from here. 
          */
+
+         // Calculate covariance matrix
+
+         // Extract eigen vectors from covariate matrix
+
+         // Get eigen values corresponding to eigen vectors
+
+         // Rank eigen vectors by how much variance they explained
+
+         // Pick the top k eigen vectors
+
+         // Project data onto these top k eigen vectors
         
     }
 
