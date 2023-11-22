@@ -14,7 +14,7 @@ import ml.data.DataSetSplit;
 import ml.data.Example;
 
 /**
- * Class that implements a TwoLayerNN (one output layer and one hidden layer)
+ * Class that implements a TwoLayerNN (one output layer and one hidden layer) for classification with a confidence
  * 
  * @author Joshua Garcia-Kimble
  */
@@ -163,7 +163,7 @@ public class TwoLayerNN implements Classifier {
             ArrayList<Example> exampleList = data.getData();
             Collections.shuffle(exampleList);
             double sumOfLoss = 0.0;
-            System.out.println("Example list size: " + exampleList.size());
+            // System.out.println("Example list size: " + exampleList.size());
             for (Example example : exampleList) {
                 // Calculate the final output by doing "matrix" multiplication - make this into a function
                 // double prediction = this.forward(example);

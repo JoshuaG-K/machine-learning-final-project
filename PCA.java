@@ -1,4 +1,6 @@
+import ml.classifiers.TwoLayerNN;
 import ml.data.DataSet;
+import ml.data.DataSetSplit;
 import ml.data.FeatureNormalizer;
 
 /**
@@ -14,6 +16,10 @@ public class PCA {
         String dataTrainFilePath = dataFolderPath + dataTrainFileName;
 
         DataSet dataTrain = new DataSet(dataTrainFilePath, DataSet.CSVFILE);
+        DataSetSplit dataSplit = dataTrain.split(0.1);
+        DataSet dataTrainSmall = dataSplit.getTrain();
+        PCA pca = new PCA(dataTrainFilePath, 5, PCA_Type.EIGEN);
+        pca.getAccuracyOnFullData(dataTrainSmall);
     }
 
     /** 
@@ -25,6 +31,8 @@ public class PCA {
         EIGEN
     }
 
+    private static final int NN_HIDDEN_NODES = 20;
+
     // The type of PCA to do
     private PCA_Type pcaType;
 
@@ -32,16 +40,20 @@ public class PCA {
     private int k;
 
     // The data we will do pca on
-    private DataSet data;
+    private DataSet modifiedData;
+
+    // Get original data used with the NN
+    private DataSet originalData;
 
     /**
      * The constructor assumes the data is in a csv file and that we want the k most important feature combinations
      */
-    public PCA(DataSet data, int k, PCA_Type pcaType) {
+    public PCA(String dataFilePath, int k, PCA_Type pcaType) {
         FeatureNormalizer featureNormalizer = new FeatureNormalizer();
-        this.data = data;
+        this.originalData = new DataSet(dataFilePath, DataSet.CSVFILE);
+        this.modifiedData = new DataSet(dataFilePath, DataSet.CSVFILE);
         // We normalize the features since this will make our Eigen vector pca calculations better 
-        featureNormalizer.preprocessTrain(this.data);;
+        featureNormalizer.preprocessTrain(this.modifiedData);;
         this.k = k;
         this.pcaType = pcaType;
 
@@ -56,6 +68,15 @@ public class PCA {
          * then just call those from here. 
          */
         
+    }
+
+    public double getAccuracyOnFullData(DataSet data) {
+        // We train the NN on the full data and output the accuracy
+        TwoLayerNN nn = new TwoLayerNN(NN_HIDDEN_NODES);
+        nn.train(data);
+        Double accuracy = nn.classifyData(data);
+        System.out.println("Accuracy: " + accuracy);
+        return accuracy;
     }
 
     private void Eigen_Pca() {
