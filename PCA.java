@@ -1,6 +1,7 @@
 import ml.classifiers.TwoLayerNN;
 import ml.data.DataSet;
 import ml.data.DataSetSplit;
+import ml.data.Example;
 import ml.data.FeatureNormalizer;
 
 /**
@@ -62,7 +63,7 @@ public class PCA {
         } else if (this.pcaType == PCA_Type.SVD) {
 
         }
-
+        this.getAllFeatureMeans(this.originalData);
         /**
          * TODO: Run PCA in the constructor. I think we should make one function for SVD PCA and one function for Eigen covariance matrix PCA 
          * then just call those from here. 
@@ -96,6 +97,31 @@ public class PCA {
 
         // 
     }
+
+    private double[][] getCovarianceMatrix(DataSet data) {
+        // First we 
+        return null;
+    }
+
+    private double[] getAllFeatureMeans(DataSet data) {
+        
+        int numFeatures = data.getAllFeatureIndices().size();
+        double[] featureMeans = new double[numFeatures];
+        int[] featureCounts = new int[numFeatures];
+
+        for (Example example : data.getData()) {
+            for (Integer feature : example.getFeatureSet()) {
+                featureMeans[feature] += example.getFeature(feature);
+                featureCounts[feature] += 1;
+            }
+        }
+
+        for (int feature = 0; feature < numFeatures; feature++) {
+            featureMeans[feature] /= featureCounts[feature];
+        }
+        return featureMeans;
+    }
+
 
     private void Svd_Pca() {
 
