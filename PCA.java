@@ -1,5 +1,6 @@
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Set;
 
 import ml.classifiers.TwoLayerNN;
@@ -135,9 +136,9 @@ public class PCA {
             double[][] topKEigenVectors = topKEigenValuesAndVectors.getEigenVectors();
             // Now, for each example, we project it onto each of the k eigen vectors and create a new example with these data points
             // We then put all of these examples into a new dataset
-            DataSet pcaDataSet = this.runPCA();
-            System.out.println("eigenValues: " + Arrays.toString(eigenValues));
-            System.out.println("eigenVectors: " + PCA.make2DArrayString(eigenVectors));
+            DataSet pcaDataSet = this.runPCA(this.modifiedData, topKEigenVectors);
+            // System.out.println("eigenValues: " + Arrays.toString(eigenValues));
+            // System.out.println("eigenVectors: " + PCA.make2DArrayString(eigenVectors));
 
         } catch (IOException e) {
             // TODO Auto-generated catch block
@@ -149,8 +150,64 @@ public class PCA {
     }
 
     private DataSet runPCA(DataSet data, double[][] eigenVectors) {
+        // We create the featureMap for our new dataset
+        System.out.println("Feature Map");
+        System.out.println(data.getFeatureMap());
+        HashMap<Integer, String> featureMap = new HashMap();
+        for (int i = 1; i <= eigenVectors.length; i++) {
+            featureMap.put(i, Arrays.toString(eigenVectors[i]));
+        }
 
-        return null;
+        DataSet pcaData = new DataSet(featureMap);
+        
+        // Loop through data
+        for (Example example : data.getData()) {
+            // Assumes that the example has features from 0 to data.getAllFeatureIndices().size()-1 [inclusive]
+            // For each example, we create a vector of its features
+            double[] featureVector = this.getExampleFeatureVector(example, data.getAllFeatureIndices().size());
+            Example pcaExample = new Example();
+            pcaExample.setLabel(example.getLabel());
+            // We then project that feature vector onto each eigen vector
+            for (int j = 0; j < eigenVectors.length; j++) {
+                double[] eigenVector = eigenVectors[j];
+                double projection = this.getProjection(featureVector, eigenVector);
+                pcaExample.setFeature(j, projection);
+            }
+            // After performing every projection, we make these into a new example and add it to a new dataset 
+            pcaData.addData(pcaExample);
+        }
+
+        
+        return pcaData;
+    }
+
+    private double getProjection(double[] featureVector, double[] eigenVector) {
+        double projection = 0;
+        double eigenVectorMagnitude = 0;
+        if (featureVector.length != eigenVector.length) {
+            System.out.println("FEATURE VECTORS AND EIGEN VECTORS ARE NOT THE SAME LENGTH");
+            return Double.MAX_VALUE;
+        }
+
+        for (int i = 0; i < featureVector.length; i++) {
+            double featureNum = featureVector[i];
+            double eigenNum = eigenVector[i];
+
+            projection += featureNum*eigenNum;
+            eigenVectorMagnitude += eigenNum*eigenNum;
+        }
+
+        return projection / eigenVectorMagnitude;
+    }
+
+    private double[] getExampleFeatureVector(Example example, int numFeatures) {
+        double[] featureVector = new double[numFeatures];
+
+        for (int i = 0; i < numFeatures; i++) {
+            featureVector[i] = example.getFeature(i);
+        }
+
+        return featureVector;
     }
 
     private TopKEigenValuesAndVectors getTopKEigenValuesAndVectors(int k, double[] eigenValues, double[][] eigenVectors) {
