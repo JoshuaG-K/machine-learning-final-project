@@ -81,6 +81,9 @@ public class TwoLayerNN implements Classifier {
     // which is akin to all of the input's features going to one node. We do this for
     // numHiddenNodes (rows in the weight matrix) and it works. 
     // Length of weight feature vector will be the number of features in the dataset.
+    public static final double POSITIVE_LABEL = 1.0;
+    public static final double NEGATIVE_LABEL = -1.0;
+
     private int numHiddenNodes;
     private double eta;
     private int numIterations;
@@ -382,23 +385,35 @@ public class TwoLayerNN implements Classifier {
 	}
 
     /**
-     * Returns the F1 Score of this classifier on each example in the dataset
+     * Returns the F1 Score of this classifier on each example in the dataset.
+     * Assumes 1.0 and -1.0 labels
      * @param test the data set
      * @return average accuracy
      */
     public double classifyDataF1Score(DataSet test) {
-		Double accuracy = 0.0;
         int truePositives = 0;
         int falsePositives = 0;
-        int trueNegatives = 0;
         int falseNegatives = 0;
-        
+
 		for (Example example : test.getData()) {
-			if (example.getLabel() == this.classify(example)) {
-				accuracy += 1.0;
-			}
+            double classification = this.classify(example);
+            double trueLabel = example.getLabel();
+			if (trueLabel == POSITIVE_LABEL && classification == POSITIVE_LABEL) {
+                truePositives += 1;
+			} else if (trueLabel == POSITIVE_LABEL && classification == NEGATIVE_LABEL) {
+                falseNegatives += 1;
+            } else if (trueLabel == NEGATIVE_LABEL && classification == POSITIVE_LABEL) {
+                falsePositives += 1;
+            }
 		}
-		return accuracy / test.getData().size();
+
+        double precision = truePositives / (truePositives + falsePositives);
+        double recall = truePositives / (truePositives + falseNegatives);
+        System.out.println("precision: " + precision);
+        System.out.println("recall: " + recall);
+        double f1Score = 2 * precision * recall / (precision + recall);
+
+		return f1Score;
 	}
 
     @Override

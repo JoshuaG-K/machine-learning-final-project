@@ -38,7 +38,6 @@ public class PCA {
         DataSetSplit dataSplit = dataTrain.split(0.1);
         DataSet dataTrainSmall = dataSplit.getTrain();
         PCA pca = new PCA(dataTrainFilePath, 5, PCA_Type.EIGEN);
-        // pca.getAccuracyOnFullData(dataTrainSmall);
 
         // Test out covariance matrix, it should look like:
         // [2.5, 7.5]
@@ -85,8 +84,13 @@ public class PCA {
         this.pcaType = pcaType;
         
         // Populate pcaData with the projected data 
-        this.pcaData = this.getPcaData();
+        this.pcaData = this.createPcaData();
 
+        this.getAccuracyOnFullData(this.modifiedData);
+        this.getAccuracyOnFullData(this.pcaData);
+        System.out.println("===================");
+        this.getF1ScoreOnFullData(this.modifiedData);
+        this.getF1ScoreOnFullData(this.pcaData);
         // System.out.println(this.originalData.getData());
         // double[] featureMeans = this.getAllFeatureMeans(this.originalData);
         // double[][] covMatrix = this.getCovarianceMatrix(this.originalData, featureMeans);
@@ -105,7 +109,28 @@ public class PCA {
         return accuracy;
     }
 
+    public double getF1ScoreOnFullData(DataSet data) {
+        // We train the NN on the full data and output the accuracy
+        TwoLayerNN nn = new TwoLayerNN(NN_HIDDEN_NODES);
+        nn.train(data);
+        Double f1Score = nn.classifyDataF1Score(data);
+        System.out.println("F1Score: " + f1Score);
+        return f1Score;
+    }
+
     private DataSet getPcaData() {
+        return this.pcaData;
+    }
+
+    private DataSet getModifiedData() {
+        return this.modifiedData;
+    }
+
+    private DataSet getOriginalData() {
+        return this.originalData;
+    }
+
+    private DataSet createPcaData() {
         // TODO: Calculate the covariance matrix
         double[] featureMeans = this.getAllFeatureMeans(this.modifiedData);
         double[][] covarianceMatrix = this.getCovarianceMatrix(this.modifiedData, featureMeans);
