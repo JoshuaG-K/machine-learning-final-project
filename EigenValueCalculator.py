@@ -9,5 +9,6 @@ def calculate_eigen_values(matrix_str):
 
 if __name__ == '__main__':
     matrix_str = sys.stdin.read()
+    # matrix_str = "[[1, 2], [3, 4]]"
     eigen_values = calculate_eigen_values(matrix_str)
     print(eigen_values)
