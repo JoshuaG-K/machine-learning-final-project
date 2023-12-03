@@ -1,8 +1,13 @@
+import java.util.Arrays;
+import java.util.Set;
+
 import ml.classifiers.TwoLayerNN;
 import ml.data.DataSet;
 import ml.data.DataSetSplit;
 import ml.data.Example;
 import ml.data.FeatureNormalizer;
+ 
+
 
 /**
  * Class that implements the PCA algorithm with SVD and eigen vector covariance matrix
@@ -12,15 +17,24 @@ import ml.data.FeatureNormalizer;
 public class PCA {
 
     public static void main(String[] args) {
-        String dataFolderPath = "C:\\Users\\Joshua\\Documents\\College\\Senior\\MachineLearning\\final-project\\machine-learning-final-project\\data\\";
+        String projectDataFolderPath = "C:\\Users\\Joshua\\Documents\\College\\Senior\\MachineLearning\\final-project\\machine-learning-final-project\\data\\project_data\\";
         String dataTrainFileName = "cs-training.csv";
-        String dataTrainFilePath = dataFolderPath + dataTrainFileName;
+        String experimentDataFolderPath = "C:\\Users\\Joshua\\Documents\\College\\Senior\\MachineLearning\\final-project\\machine-learning-final-project\\data\\experiment_data\\";
+        String experimentFileName = "testing_covariance.csv";
+        String dataTrainFilePath = projectDataFolderPath + dataTrainFileName;
+        String experimentTrainFilePath = experimentDataFolderPath + experimentFileName;
 
-        DataSet dataTrain = new DataSet(dataTrainFilePath, DataSet.CSVFILE);
-        DataSetSplit dataSplit = dataTrain.split(0.1);
-        DataSet dataTrainSmall = dataSplit.getTrain();
-        PCA pca = new PCA(dataTrainFilePath, 5, PCA_Type.EIGEN);
-        pca.getAccuracyOnFullData(dataTrainSmall);
+        // DataSet dataTrain = new DataSet(dataTrainFilePath, DataSet.CSVFILE);
+        // DataSetSplit dataSplit = dataTrain.split(0.1);
+        // DataSet dataTrainSmall = dataSplit.getTrain();
+        // PCA pca = new PCA(dataTrainFilePath, 5, PCA_Type.EIGEN);
+        // pca.getAccuracyOnFullData(dataTrainSmall);
+
+        // Test out covariance matrix, it should look like:
+        // [2.5, 7.5]
+        // [0.0, 22.5]
+        DataSet dataTrainExp = new DataSet(experimentTrainFilePath, DataSet.CSVFILE);
+        PCA pcaExp = new PCA(experimentTrainFilePath, 5, PCA_Type.EIGEN);
     }
 
     /** 
@@ -63,7 +77,12 @@ public class PCA {
         } else if (this.pcaType == PCA_Type.SVD) {
 
         }
-        this.getAllFeatureMeans(this.originalData);
+        System.out.println(this.originalData.getData());
+        double[] featureMeans = this.getAllFeatureMeans(this.originalData);
+        double[][] covMatrix = this.getCovarianceMatrix(this.originalData, featureMeans);
+        for (double[] row : covMatrix) {
+            System.out.println(Arrays.toString(row));
+        }
         /**
          * TODO: Run PCA in the constructor. I think we should make one function for SVD PCA and one function for Eigen covariance matrix PCA 
          * then just call those from here. 
@@ -98,9 +117,43 @@ public class PCA {
         // 
     }
 
-    private double[][] getCovarianceMatrix(DataSet data) {
-        // First we 
-        return null;
+    // This calculation assumes each example has the exact same number of features 
+    private double[][] getCovarianceMatrix(DataSet data, double[] featureMeans) {
+        int numExamples = data.getData().size();
+        // First we make a numFeatures x numFeatures matrix
+        int numFeatures = data.getAllFeatureIndices().size();
+        double[][] covarianceMatrix = new double[numFeatures][numFeatures];
+        // We go through each example and then each feature in that example in a nested way to get the variance
+
+        // This for loop assumes that each example contains all of the features in 
+        for (Example example : data.getData()) {
+            Set<Integer> featureSet = example.getFeatureSet();
+            for (int feature1 = 0 ; feature1 < numFeatures; feature1++) {
+                for (int feature2 = feature1 ; feature2 < numFeatures; feature2++) {
+                    double feature1MeanDifference = example.getFeature(feature1) - featureMeans[feature1];
+                    double feature2MeanDifference = example.getFeature(feature2) - featureMeans[feature2];
+                    double almostVarTerm = feature1MeanDifference*feature2MeanDifference;
+                    covarianceMatrix[feature1][feature2] += almostVarTerm;
+                    covarianceMatrix[feature2][feature1] += almostVarTerm;
+                }
+            }
+        }
+
+        // Now we must devide by N-1
+        for (int feature1 = 0 ; feature1 < numFeatures; feature1++) {
+            for (int feature2 = feature1 ; feature2 < numFeatures; feature2++) {
+                covarianceMatrix[feature1][feature2] = covarianceMatrix[feature1][feature2]/(numExamples-1);
+                if (feature1 != feature2) {
+                    covarianceMatrix[feature2][feature1] = covarianceMatrix[feature2][feature1]/(numExamples-1);
+                }
+            }
+        }
+        return covarianceMatrix;
+            // The nested for loop will have us calculating the covariance of each variable (including itself)
+
+        // Loop through each example
+            // Calculate x_i - mean_x for all features x
+            // Multiple them together
     }
 
     private double[] getAllFeatureMeans(DataSet data) {
