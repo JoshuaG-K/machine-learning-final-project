@@ -1,4 +1,5 @@
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Set;
 
 import ml.classifiers.TwoLayerNN;
@@ -80,11 +81,11 @@ public class PCA {
         this.k = k;
         this.pcaType = pcaType;
 
-        if (this.pcaType == PCA_Type.EIGEN) {
+        // if (this.pcaType == PCA_Type.EIGEN) {
+            
+        // } else if (this.pcaType == PCA_Type.SVD) {
 
-        } else if (this.pcaType == PCA_Type.SVD) {
-
-        }
+        // }
         // System.out.println(this.originalData.getData());
         // double[] featureMeans = this.getAllFeatureMeans(this.originalData);
         // double[][] covMatrix = this.getCovarianceMatrix(this.originalData, featureMeans);
@@ -129,8 +130,15 @@ public class PCA {
         try {
             double[] eigenValues = PCA.getEigenValues(covarianceMatrix);
             double[][] eigenVectors = PCA.getEigenVectors(covarianceMatrix);
+            // Now we take the top k eigenValues and their corresponding eigen vectors
+            TopKEigenValuesAndVectors topKEigenValuesAndVectors = this.getTopKEigenValuesAndVectors(k, eigenValues, eigenVectors);
+            double[][] topKEigenVectors = topKEigenValuesAndVectors.getEigenVectors();
+            // Now, for each example, we project it onto each of the k eigen vectors and create a new example with these data points
+            // We then put all of these examples into a new dataset
+            DataSet pcaDataSet = this.runPCA();
             System.out.println("eigenValues: " + Arrays.toString(eigenValues));
             System.out.println("eigenVectors: " + PCA.make2DArrayString(eigenVectors));
+
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -138,6 +146,35 @@ public class PCA {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
+    }
+
+    private DataSet runPCA(DataSet data, double[][] eigenVectors) {
+
+        return null;
+    }
+
+    private TopKEigenValuesAndVectors getTopKEigenValuesAndVectors(int k, double[] eigenValues, double[][] eigenVectors) {
+        if (k > eigenValues.length) {
+            return null;
+        }
+        Pair[] eigenValueAndIndex = new Pair[eigenValues.length];
+        for (int index = 0; index < eigenValues.length; index++) {
+            double val = eigenValues[index];
+            Pair pair = new Pair(val, index);
+        }
+
+        Arrays.sort(eigenValueAndIndex);
+
+        double[] topKEigenValues = new double[k];
+        double[][] topKEigenVectors = new double[k][eigenVectors[0].length];
+
+        for (int i = 0; i < k; i++) {
+            Pair pair = eigenValueAndIndex[i];
+            topKEigenValues[i] = pair.getValue();
+            topKEigenVectors[i] = eigenVectors[pair.getIndex()];
+        }
+        TopKEigenValuesAndVectors topKEigenVectorsAndValues = new TopKEigenValuesAndVectors(k, topKEigenValues, topKEigenVectors);
+        return topKEigenVectorsAndValues;
     }
 
     private static String make2DArrayString(double[][] matrix) {
@@ -175,17 +212,6 @@ public class PCA {
 
         double[] eigenValues = MatrixIO.parseArray(eigenvaluesString);
         return eigenValues;
-        // Process process = new ProcessBuilder("python", "EigenValueCalculator.py")
-        //         .start();
-        // try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()))) {
-        //     MatrixIO.writeMatrix(writer, matrix);
-        // }
-
-        // BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        // String eigenvaluesString = reader.readLine();
-        // process.waitFor();
-
-        // return MatrixIO.parseArray(eigenvaluesString);
     }
 
     // This code is an amalgamation of stack overflow, chat-gpt, and our own ingenious
@@ -211,19 +237,6 @@ public class PCA {
         String eigenVectorsString = in.readLine();
         double[][] eigenVectors = MatrixIO.parseMatrix(eigenVectorsString);
         return eigenVectors;
-
-        // Process process = new ProcessBuilder("python", "EigenVectorCalculator.py")
-        //         .start();
-
-        // try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()))) {
-        //     MatrixIO.writeMatrix(writer, matrix);
-        // }
-
-        // BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        // String eigenvectorsString = reader.readLine();
-        // process.waitFor();
-
-        // return MatrixIO.parseMatrix(eigenvectorsString);
     }
 
     // This calculation assumes each example has the exact same number of features 
@@ -284,13 +297,7 @@ public class PCA {
         return featureMeans;
     }
 
-
-    private void Svd_Pca() {
-
-    }
-
     private class MatrixIO {
-
         public static double[] parseArray(String arrayString) {
             String[] elements = arrayString.split(" ");
             double[] result = new double[elements.length];
