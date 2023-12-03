@@ -70,6 +70,8 @@ public class PCA {
     // Get original data used with the NN
     private DataSet originalData;
 
+    private DataSet pcaData;
+
     /**
      * The constructor assumes the data is in a csv file and that we want the k most important feature combinations
      */
@@ -81,36 +83,16 @@ public class PCA {
         featureNormalizer.preprocessTrain(this.modifiedData);;
         this.k = k;
         this.pcaType = pcaType;
+        
+        // Populate pcaData with the projected data 
+        this.pcaData = this.getPcaData();
 
-        // if (this.pcaType == PCA_Type.EIGEN) {
-            
-        // } else if (this.pcaType == PCA_Type.SVD) {
-
-        // }
         // System.out.println(this.originalData.getData());
         // double[] featureMeans = this.getAllFeatureMeans(this.originalData);
         // double[][] covMatrix = this.getCovarianceMatrix(this.originalData, featureMeans);
         // for (double[] row : covMatrix) {
         //     System.out.println(Arrays.toString(row));
         // }
-
-        this.eigenPca();
-        /**
-         * TODO: Run PCA in the constructor. I think we should make one function for SVD PCA and one function for Eigen covariance matrix PCA 
-         * then just call those from here. 
-         */
-
-         // Calculate covariance matrix
-
-         // Extract eigen vectors from covariate matrix
-
-         // Get eigen values corresponding to eigen vectors
-
-         // Rank eigen vectors by how much variance they explained
-
-         // Pick the top k eigen vectors
-
-         // Project data onto these top k eigen vectors
         
     }
 
@@ -123,7 +105,7 @@ public class PCA {
         return accuracy;
     }
 
-    private void eigenPca() {
+    private DataSet getPcaData() {
         // TODO: Calculate the covariance matrix
         double[] featureMeans = this.getAllFeatureMeans(this.modifiedData);
         double[][] covarianceMatrix = this.getCovarianceMatrix(this.modifiedData, featureMeans);
@@ -136,29 +118,30 @@ public class PCA {
             double[][] topKEigenVectors = topKEigenValuesAndVectors.getEigenVectors();
             // Now, for each example, we project it onto each of the k eigen vectors and create a new example with these data points
             // We then put all of these examples into a new dataset
-            DataSet pcaDataSet = this.runPCA(this.modifiedData, topKEigenVectors);
+            return this.runPCA(this.modifiedData, topKEigenVectors);
             // System.out.println("eigenValues: " + Arrays.toString(eigenValues));
             // System.out.println("eigenVectors: " + PCA.make2DArrayString(eigenVectors));
 
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
+            return null;
         } catch (InterruptedException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
+            return null;
         }
     }
 
     private DataSet runPCA(DataSet data, double[][] eigenVectors) {
         // We create the featureMap for our new dataset
-        System.out.println("Feature Map");
-        System.out.println(data.getFeatureMap());
-        HashMap<Integer, String> featureMap = new HashMap();
-        for (int i = 1; i <= eigenVectors.length; i++) {
-            featureMap.put(i, Arrays.toString(eigenVectors[i]));
+        HashMap<Integer, String> featureMap = new HashMap<>();
+        for (int i = 0; i < eigenVectors.length; i++) {
+            featureMap.put(i, "eigenVector_" + i);
         }
-
-        DataSet pcaData = new DataSet(featureMap);
+        // System.out.println("Feature Map");
+        // System.out.println(featureMap);
+        DataSet pcaOutputData = new DataSet(featureMap);
         
         // Loop through data
         for (Example example : data.getData()) {
@@ -174,11 +157,11 @@ public class PCA {
                 pcaExample.setFeature(j, projection);
             }
             // After performing every projection, we make these into a new example and add it to a new dataset 
-            pcaData.addData(pcaExample);
+            pcaOutputData.addData(pcaExample);
         }
 
         
-        return pcaData;
+        return pcaOutputData;
     }
 
     private double getProjection(double[] featureVector, double[] eigenVector) {
@@ -218,6 +201,7 @@ public class PCA {
         for (int index = 0; index < eigenValues.length; index++) {
             double val = eigenValues[index];
             Pair pair = new Pair(val, index);
+            eigenValueAndIndex[index] = pair;
         }
 
         Arrays.sort(eigenValueAndIndex);

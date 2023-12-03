@@ -381,6 +381,26 @@ public class TwoLayerNN implements Classifier {
 		return accuracy / test.getData().size();
 	}
 
+    /**
+     * Returns the F1 Score of this classifier on each example in the dataset
+     * @param test the data set
+     * @return average accuracy
+     */
+    public double classifyDataF1Score(DataSet test) {
+		Double accuracy = 0.0;
+        int truePositives = 0;
+        int falsePositives = 0;
+        int trueNegatives = 0;
+        int falseNegatives = 0;
+        
+		for (Example example : test.getData()) {
+			if (example.getLabel() == this.classify(example)) {
+				accuracy += 1.0;
+			}
+		}
+		return accuracy / test.getData().size();
+	}
+
     @Override
     public double confidence(Example example) {
         return this.forward(example);    
