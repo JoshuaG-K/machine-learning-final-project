@@ -30,14 +30,28 @@ public class PCA {
         String projectDataFolderPath = "C:\\Users\\Joshua\\Documents\\College\\Senior\\MachineLearning\\final-project\\machine-learning-final-project\\data\\project_data\\";
         String dataTrainFileName = "cs-training.csv";
         String experimentDataFolderPath = "C:\\Users\\Joshua\\Documents\\College\\Senior\\MachineLearning\\final-project\\machine-learning-final-project\\data\\experiment_data\\";
+        String balancedDataFolderPath = "C:\\Users\\Joshua\\Documents\\College\\Senior\\MachineLearning\\final-project\\machine-learning-final-project\\data\\balanced_project_data\\";
+        String untouchedBalancedData = "untouched_balanced_data.csv";
+        String pcaFromRDataFileName = "R_pca_balanced_data.csv";
         String experimentFileName = "testing_covariance.csv";
         String dataTrainFilePath = projectDataFolderPath + dataTrainFileName;
         String experimentTrainFilePath = experimentDataFolderPath + experimentFileName;
+        String balancedDataTrainFilePath = balancedDataFolderPath + untouchedBalancedData;
+        String pcaFromRDataTrainFilePath = balancedDataFolderPath + pcaFromRDataFileName;
 
-        DataSet dataTrain = new DataSet(dataTrainFilePath, DataSet.CSVFILE);
-        DataSetSplit dataSplit = dataTrain.split(0.1);
-        DataSet dataTrainSmall = dataSplit.getTrain();
-        PCA pca = new PCA(dataTrainFilePath, 5, PCA_Type.EIGEN);
+        DataSet balancedData = new DataSet(balancedDataTrainFilePath, DataSet.CSVFILE);
+        DataSet pcaFromRData = new DataSet(pcaFromRDataTrainFilePath, DataSet.CSVFILE);
+
+        DataSet dataTrain = new DataSet(balancedDataTrainFilePath, DataSet.CSVFILE);
+        // DataSetSplit dataSplit = dataTrain.split(1.0);
+        // DataSet dataTrainSmall = dataSplit.getTrain();
+        PCA pca = new PCA(balancedDataTrainFilePath, 5, PCA_Type.EIGEN);
+        System.out.println("OUR PCA");
+        pca.getF1ScoreOnFullData(pca.getPcaData());
+        System.out.println("WITHOUT PCA");
+        pca.getF1ScoreOnFullData(balancedData);
+        System.out.println("PCA FROM R");
+        pca.getF1ScoreOnFullData(pcaFromRData);
 
         // Test out covariance matrix, it should look like:
         // [2.5, 7.5]
@@ -55,7 +69,7 @@ public class PCA {
         EIGEN
     }
 
-    private static final int NN_HIDDEN_NODES = 20;
+    private static final int NN_HIDDEN_NODES = 30;
 
     // The type of PCA to do
     private PCA_Type pcaType;
@@ -86,11 +100,11 @@ public class PCA {
         // Populate pcaData with the projected data 
         this.pcaData = this.createPcaData();
 
-        this.getAccuracyOnFullData(this.modifiedData);
-        this.getAccuracyOnFullData(this.pcaData);
-        System.out.println("===================");
-        this.getF1ScoreOnFullData(this.modifiedData);
-        this.getF1ScoreOnFullData(this.pcaData);
+        // this.getAccuracyOnFullData(this.modifiedData);
+        // this.getAccuracyOnFullData(this.pcaData);
+        // System.out.println("===================");
+        // this.getF1ScoreOnFullData(this.modifiedData);
+        // this.getF1ScoreOnFullData(this.pcaData);
         // System.out.println(this.originalData.getData());
         // double[] featureMeans = this.getAllFeatureMeans(this.originalData);
         // double[][] covMatrix = this.getCovarianceMatrix(this.originalData, featureMeans);
