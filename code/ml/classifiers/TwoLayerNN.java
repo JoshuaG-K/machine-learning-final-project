@@ -407,8 +407,8 @@ public class TwoLayerNN implements Classifier {
             }
 		}
 
-        double precision = truePositives / (truePositives + falsePositives);
-        double recall = truePositives / (truePositives + falseNegatives);
+        double precision = truePositives / (double)(truePositives + falsePositives);
+        double recall = truePositives / (double)(truePositives + falseNegatives);
         System.out.println("precision: " + precision);
         System.out.println("recall: " + recall);
         double f1Score = 2 * precision * recall / (precision + recall);

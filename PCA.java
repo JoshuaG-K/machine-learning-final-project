@@ -53,6 +53,13 @@ public class PCA {
         System.out.println("PCA FROM R");
         pca.getF1ScoreOnFullData(pcaFromRData);
 
+        // System.out.println("OUR PCA");
+        // pca.getAccuracyOnFullData(pca.getPcaData());
+        // System.out.println("WITHOUT PCA");
+        // pca.getAccuracyOnFullData(balancedData);
+        // System.out.println("PCA FROM R");
+        // pca.getAccuracyOnFullData(pcaFromRData);
+
         // Test out covariance matrix, it should look like:
         // [2.5, 7.5]
         // [0.0, 22.5]
