@@ -46,12 +46,16 @@ public class PCA {
         // DataSetSplit dataSplit = dataTrain.split(1.0);
         // DataSet dataTrainSmall = dataSplit.getTrain();
         PCA pca = new PCA(balancedDataTrainFilePath, 5, PCA_Type.EIGEN);
-        System.out.println("OUR PCA");
-        pca.getF1ScoreOnFullData(pca.getPcaData());
-        System.out.println("WITHOUT PCA");
-        pca.getF1ScoreOnFullData(balancedData);
-        System.out.println("PCA FROM R");
-        pca.getF1ScoreOnFullData(pcaFromRData);
+        int numPoints = 10; 
+        double[] ourPca = new double[numPoints];
+        double[] pcaFromR = new double[numPoints];
+        double[] noPca = new double[numPoints];
+
+        for (int i = 0; i < numPoints; i++) {
+            ourPca[i] = pca.getF1ScoreOnFullData(pca.getPcaData());
+            pcaFromR[i] = pca.getF1ScoreOnFullData(pcaFromRData);
+            noPca[i] = pca.getF1ScoreOnFullData(balancedData);
+        }
 
         // System.out.println("OUR PCA");
         // pca.getAccuracyOnFullData(pca.getPcaData());
