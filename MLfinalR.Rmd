@@ -1,0 +1,153 @@
+---
+title: "PCA Give me Some Credit"
+output:
+  pdf_document: default
+  html_document: default
+date: "2023-11-28"
+---
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(caret)
+library(nnet)
+library(ROSE)
+
+
+# Reading the dataset
+train_data <- read.csv("/Users/abraham/Downloads/cs-training.csv")
+test_data <- read.csv("/Users/abraham/Downloads/GiveMeSomeCredit/cs-test.csv")
+
+# Transform -1 labels in SeriousDlqin2yrs to 0
+train_data$SeriousDlqin2yrs[train_data$SeriousDlqin2yrs == -1] <- 0
+
+# Splitting the data into training and testing sets
+set.seed(123)
+splitIndex_orig <- createDataPartition(train_data$SeriousDlqin2yrs, p = .80, list = TRUE, times = 1)
+train_set_orig <- train_data[splitIndex_orig[[1]],]
+test_set_orig <- train_data[-splitIndex_orig[[1]],]
+
+# Pre-processing: Normalize the training data (excluding target variable)
+preProcValues <- preProcess(train_set_orig[, !names(train_set_orig) %in% c("SeriousDlqin2yrs")], method = c("center", "scale"))
+train_set_normalized <- predict(preProcValues, train_set_orig[, !names(train_set_orig) %in% c("SeriousDlqin2yrs")])
+
+# Applying PCA
+pca_result <- prcomp(train_set_normalized)
+n <- 5
+
+# Create PCA-transformed data frame
+data_pca <- data.frame(pca_result$x[, 1:n])
+
+# Add SeriousDlqin2yrs from train_set_orig to data_pca
+data_pca$SeriousDlqin2yrs <- train_set_orig$SeriousDlqin2yrs
+
+# Convert SeriousDlqin2yrs to a factor with the correct levels
+data_pca$SeriousDlqin2yrs <- factor(data_pca$SeriousDlqin2yrs, levels = c("0", "1"))
+
+# Now split the data into training and test sets
+set.seed(123)
+splitIndex <- createDataPartition(data_pca$SeriousDlqin2yrs, p = .80, list = TRUE, times = 1)
+train_set_pca <- data_pca[splitIndex[[1]],]
+test_set_pca <- data_pca[-splitIndex[[1]],]
+
+# Train model on PCA-transformed data
+# Apply oversampling on the training set
+train_set_pca_balanced <- ovun.sample(SeriousDlqin2yrs ~ ., data = train_set_pca, method = "over", N = 30000)$data
+#write.csv(train_set_pca_balanced, "my_script.csv", row.names = FALSE)
+#file_path <- paste(getwd(), "/my_script.csv", sep = "")
+#print(file_path)
+
+
+
+# Train model on balanced PCA-transformed data
+# Adjust the size and maxit according to the complexity needed
+model_pca <- nnet::nnet(SeriousDlqin2yrs ~ ., data = train_set_pca_balanced, size = 5, linout = FALSE, maxit = 500, decay = 1e-4)  # decay is for regularization
+
+#model_pca <- nnet::nnet(SeriousDlqin2yrs ~ ., data = train_set_pca, size = 10, linout = FALSE, maxit = 1000)
+
+# Train model on original data
+model_orig <- nnet::nnet(SeriousDlqin2yrs ~ ., data = train_set_orig, size = 10, linout = FALSE, maxit = 1000)
+
+# Predict and evaluate on PCA-transformed data
+probabilities_pca <- predict(model_pca, newdata = test_set_pca, type = "raw")
+predicted_labels_pca <- ifelse(probabilities_pca > 0.7, "1", "0")
+
+# Convert predicted labels to a factor and explicitly set the levels to match the test set
+predicted_labels_pca <- factor(predicted_labels_pca, levels = levels(test_set_pca$SeriousDlqin2yrs))
+unique_levels <- levels(test_set_pca$SeriousDlqin2yrs)
+print(unique_levels)
+
+# Now create the confusion matrix
+confusionMatrix_pca <- caret::confusionMatrix(predicted_labels_pca, test_set_pca$SeriousDlqin2yrs)
+print(confusionMatrix_pca)
+
+
+accuracy_pca <- sum(predicted_labels_pca == test_set_pca$SeriousDlqin2yrs) / nrow(test_set_pca)
+
+# Predict and evaluate on original data
+# Ensure test_set_orig$SeriousDlqin2yrs is a factor with the correct levels
+test_set_orig$SeriousDlqin2yrs <- factor(test_set_orig$SeriousDlqin2yrs, levels = c("0", "1"))
+
+# Predict and evaluate on original data
+probabilities_orig <- predict(model_orig, newdata = test_set_orig, type = "raw")
+predicted_labels_orig <- ifelse(probabilities_orig > 0.7, "1", "0")
+
+# Convert predicted labels to a factor with the same levels as the test set
+predicted_labels_orig <- factor(predicted_labels_orig, levels = levels(test_set_orig$SeriousDlqin2yrs))
+
+# Create the confusion matrix for the original data
+confusionMatrix_orig <- caret::confusionMatrix(predicted_labels_orig, test_set_orig$SeriousDlqin2yrs)
+print(confusionMatrix_orig)
+
+install_if_needed("pROC")
+library(pROC)
+roc_response <- roc(response = test_set_orig$SeriousDlqin2yrs, predictor = as.numeric(probabilities_orig))
+plot(roc_response, main = "ROC Curve")
+
+
+# Calculate and print accuracy for the original data
+accuracy_orig <- sum(predicted_labels_orig == test_set_orig$SeriousDlqin2yrs) / nrow(test_set_orig)
+# Impute missing values in MonthlyIncome
+median_monthly_income <- median(train_data$MonthlyIncome, na.rm = TRUE)
+test_data$MonthlyIncome[is.na(test_data$MonthlyIncome)] <- median_monthly_income
+# Impute missing values in NumberOfDependents
+median_num_dependents <- median(train_data$NumberOfDependents, na.rm = TRUE)
+test_data$NumberOfDependents[is.na(test_data$NumberOfDependents)] <- median_num_dependents
+
+# Normalize the test data using the preProcValues from the training phase
+test_data_normalized <- predict(preProcValues, test_data[, !names(test_data) %in% c("SeriousDlqin2yrs")])
+
+# Apply PCA transformation using pca_result from the training phase
+# Keep only the number of components you used in training (n)
+test_data_pca <- predict(pca_result, newdata = test_data_normalized)[, 1:n]
+
+# Predict using the trained model (model_pca)
+probabilities_test_pca <- predict(model_pca, newdata = test_data_pca, type = "raw")
+
+# Convert probabilities to binary predictions (adjust the threshold as needed)
+predicted_labels_test_pca <- ifelse(probabilities_test_pca > 0.7, "1", "0")
+
+# Create a data frame for submission
+submission_pca <- data.frame(Id = 1:nrow(test_data), Probability = probabilities_test_pca)
+summary(test_data_pca)
+summary(test_set_normalized[, 1:n])  # First n columns corresponding to PCA components
+
+
+write.csv(submission_pca, "submission_pca.csv", row.names = FALSE)
+
+
+
+```
+
+```{r}
+# Print results
+print("Confusion Matrix with PCA:")
+print(confusionMatrix_pca)
+print(paste("Accuracy with PCA: ", accuracy_pca))
+
+print("Confusion Matrix without PCA:")
+print(confusionMatrix_orig)
+print(paste("Accuracy without PCA: ", accuracy_orig))
+
+```
+
